@@ -1,12 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod map;
+mod save;
 mod systems;
 mod tile;
 mod tile_color;
 
 use bevy::prelude::*;
 use map::{CurrentLayer, MAP_HEIGHT, MAP_SIZE, MapData3D, Turn, setup_map};
+use save::save_map_and_turn;
 use systems::{layer_switch_system, turn_timer_system, update_tiles_visual};
 
 fn main() {
@@ -25,7 +27,17 @@ fn main() {
         .add_systems(Startup, setup_map)
         .add_systems(
             Update,
-            (turn_timer_system, update_tiles_visual, layer_switch_system),
+            (
+                turn_timer_system,
+                update_tiles_visual,
+                layer_switch_system,
+                save_system,
+            ),
         )
         .run();
+}
+
+fn save_system(map: Res<MapData3D>, turn: Res<Turn>, timer: Local<f32>) {
+    // 例: "map_save.txt" に保存
+    let _ = save_map_and_turn(&map, &turn, *timer as f64, "map_save.txt");
 }
