@@ -11,6 +11,7 @@ log = { version = "*", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
+quick-xml = "0.37.5"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

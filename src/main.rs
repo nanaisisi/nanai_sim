@@ -8,7 +8,7 @@ mod tile_color;
 
 use bevy::prelude::*;
 use map::{CurrentLayer, MAP_HEIGHT, MAP_SIZE, MapData3D, Turn, setup_map};
-use save::save_map_and_turn;
+use save::save_map_and_turn_xml;
 use systems::{layer_switch_system, turn_timer_system, update_tiles_visual};
 
 fn main() {
@@ -38,6 +38,6 @@ fn main() {
 }
 
 fn save_system(map: Res<MapData3D>, turn: Res<Turn>, timer: Local<f32>) {
-    // 例: "map_save.txt" に保存
-    let _ = save_map_and_turn(&map, &turn, *timer as f64, "map_save.txt");
+    // 例: "map_save.xml" に保存
+    let _ = save_map_and_turn_xml(&map, &turn, *timer as f64, "map_save.xml");
 }
