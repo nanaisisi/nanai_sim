@@ -6,8 +6,8 @@ mod tile;
 mod tile_color;
 
 use bevy::prelude::*;
-use map::{MAP_HEIGHT, MAP_SIZE, MapData3D, TILE_SIZE, Turn, setup_map};
-use systems::{turn_timer_system, update_tiles_visual};
+use map::{CurrentLayer, MAP_HEIGHT, MAP_SIZE, MapData3D, Turn, setup_map};
+use systems::{layer_switch_system, turn_timer_system, update_tiles_visual};
 
 fn main() {
     App::new()
@@ -21,7 +21,11 @@ fn main() {
             ];
             MAP_HEIGHT
         ]))
+        .insert_resource(CurrentLayer(MAP_HEIGHT - 1)) // 一番上層から表示
         .add_systems(Startup, setup_map)
-        .add_systems(Update, (turn_timer_system, update_tiles_visual))
+        .add_systems(
+            Update,
+            (turn_timer_system, update_tiles_visual, layer_switch_system),
+        )
         .run();
 }

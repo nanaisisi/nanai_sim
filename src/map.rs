@@ -11,6 +11,9 @@ pub struct MapData3D(pub Vec<Vec<Vec<TileState>>>);
 #[derive(Resource)]
 pub struct Turn(pub u64);
 
+#[derive(Resource)]
+pub struct CurrentLayer(pub usize);
+
 pub fn setup_map(mut commands: Commands, mut map: ResMut<MapData3D>) {
     use crate::tile_color::tile_color;
     commands.spawn(Camera2d);

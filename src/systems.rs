@@ -1,4 +1,4 @@
-use crate::map::{MAP_SIZE, MapData3D, Turn};
+use crate::map::{CurrentLayer, MAP_HEIGHT, MAP_SIZE, MapData3D, Turn};
 use crate::tile::{Tile, TileState};
 use bevy::prelude::*;
 use rand::Rng;
@@ -14,7 +14,7 @@ pub fn turn_timer_system(
     if *timer >= 1.0 {
         *timer = 0.0;
         turn.0 += 1;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         // bot的な自動処理: 各タイルの状態を進める（z=0のみ）
         for y in 0..MAP_SIZE {
             for x in 0..MAP_SIZE {
@@ -24,7 +24,7 @@ pub fn turn_timer_system(
                     TileState::Growing => TileState::Harvest,
                     TileState::Harvest => TileState::Field,
                     TileState::Empty => {
-                        if rng.gen_range(0.0..1.0) < 0.01 {
+                        if rng.random_range(0.0..1.0) < 0.01 {
                             TileState::Field
                         } else {
                             TileState::Empty
@@ -44,9 +44,44 @@ pub fn turn_timer_system(
     }
 }
 
-pub fn update_tiles_visual(mut tiles: Query<(&Tile, &mut Sprite)>) {
+pub fn update_tiles_visual(
+    mut tiles: Query<(&Tile, Entity, &mut Sprite)>,
+    map: Res<MapData3D>,
+    current_layer: Res<CurrentLayer>,
+) {
     use crate::tile_color::tile_color;
-    for (tile, mut sprite) in tiles.iter_mut() {
-        sprite.color = tile_color(tile.state);
+    let z = current_layer.0;
+    for (tile, _entity, mut sprite) in tiles.iter_mut() {
+        // 同層が存在する場合はそのまま表示
+        if tile.z == z {
+            sprite.color = tile_color(tile.state).with_alpha(1.0);
+        } else if tile.z < z {
+            // 下層の表示: 透過度を下げて表示
+            let below = &map.0[z][tile.y][tile.x];
+            if *below == TileState::Empty {
+                sprite.color = tile_color(tile.state).with_alpha(0.3);
+            } else {
+                sprite.color = tile_color(tile.state).with_alpha(0.0);
+            }
+        } else {
+            // 上層は非表示
+            sprite.color = tile_color(tile.state).with_alpha(0.0);
+        }
+    }
+}
+
+pub fn layer_switch_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut current_layer: ResMut<CurrentLayer>,
+) {
+    if keyboard.just_pressed(KeyCode::ArrowUp) {
+        if current_layer.0 + 1 < MAP_HEIGHT {
+            current_layer.0 += 1;
+        }
+    }
+    if keyboard.just_pressed(KeyCode::ArrowDown) {
+        if current_layer.0 > 0 {
+            current_layer.0 -= 1;
+        }
     }
 }
