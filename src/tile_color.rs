@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::tile::TileState;
+use bevy::prelude::*;
 
 pub fn tile_color(state: TileState) -> Color {
     match state {
