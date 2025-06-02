@@ -1,8 +1,8 @@
-use crate::tile::{Tile, TileBundle, TileState};
+use crate::tile::{Tile, TileState};
 use bevy::prelude::*;
 
 pub const MAP_SIZE: usize = 16;
-pub const TILE_SIZE: f32 = 32.0;
+pub const TILE_SIZE: f32 = 1.0; // 3D用に1.0に変更
 pub const MAP_HEIGHT: usize = 8;
 
 #[derive(Resource)]
@@ -14,42 +14,73 @@ pub struct Turn(pub u64);
 #[derive(Resource)]
 pub struct CurrentLayer(pub usize);
 
-pub fn setup_map(mut commands: Commands, mut map: ResMut<MapData3D>) {
+pub fn setup_map(
+    mut commands: Commands,
+    mut map: ResMut<MapData3D>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     use crate::tile_color::tile_color;
-    commands.spawn(Camera2d);
+    // 3Dカメラ
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(
+            MAP_SIZE as f32 * 0.5,
+            MAP_SIZE as f32 * 1.2,
+            MAP_HEIGHT as f32 * 2.5,
+        )
+        .looking_at(
+            Vec3::new(MAP_SIZE as f32 / 2.0, MAP_SIZE as f32 / 2.0, 0.0),
+            Vec3::Y,
+        ),
+        GlobalTransform::default(),
+    ));
+    // ライト
+    commands.spawn((
+        PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        Transform::from_xyz(
+            MAP_SIZE as f32 * 0.5,
+            MAP_SIZE as f32 * 1.5,
+            MAP_HEIGHT as f32 * 3.0,
+        ),
+        GlobalTransform::default(),
+    ));
     let mut new_map = vec![vec![vec![TileState::Empty; MAP_SIZE]; MAP_SIZE]; MAP_HEIGHT];
-    // 地形生成: 石(下層), 土(中層), 水(一部), 空気(上層)
     for z in 0..MAP_HEIGHT {
         for y in 0..MAP_SIZE {
             for x in 0..MAP_SIZE {
                 let state = if z < MAP_HEIGHT / 3 {
-                    TileState::Stone // 下層は石
+                    TileState::Stone
                 } else if z < MAP_HEIGHT / 2 {
-                    TileState::Soil // 中層は土
+                    TileState::Soil
                 } else if z == MAP_HEIGHT / 2 && (x > 4 && x < 11) && (y > 4 && y < 11) {
-                    TileState::Water // 中央に水の池
+                    TileState::Water
                 } else {
-                    TileState::Empty // それ以外は空気
+                    TileState::Empty
                 };
                 new_map[z][y][x] = state;
-                // z=0のみ描画（2D表示のまま）
-                if z == 0 {
-                    commands.spawn(TileBundle {
-                        sprite: Sprite {
-                            color: tile_color(state),
-                            custom_size: Some(Vec2::splat(TILE_SIZE - 2.0)),
-                            ..default()
-                        },
-                        transform: Transform::from_xyz(
-                            x as f32 * TILE_SIZE - (MAP_SIZE as f32 * TILE_SIZE) / 2.0
-                                + TILE_SIZE / 2.0,
-                            y as f32 * TILE_SIZE - (MAP_SIZE as f32 * TILE_SIZE) / 2.0
-                                + TILE_SIZE / 2.0,
-                            0.0,
-                        ),
-                        tile: Tile { x, y, z, state },
-                    });
-                }
+                // すべてのz層をspawn
+                let color = tile_color(state);
+                // 立方体Meshが使えない場合は2D Quadで仮表示
+                let mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::splat(TILE_SIZE - 0.05))));
+                let material = materials.add(StandardMaterial {
+                    base_color: color,
+                    perceptual_roughness: 0.9,
+                    ..default()
+                });
+                commands.spawn((
+                    PbrBundle {
+                        mesh,
+                        material,
+                        transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+                        ..default()
+                    },
+                    Tile { x, y, z, state },
+                ));
             }
         }
     }

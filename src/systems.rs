@@ -45,27 +45,28 @@ pub fn turn_timer_system(
 }
 
 pub fn update_tiles_visual(
-    mut tiles: Query<(&Tile, Entity, &mut Sprite)>,
+    tiles: Query<(&Tile, &mut Handle<StandardMaterial>)>,
     map: Res<MapData3D>,
     current_layer: Res<CurrentLayer>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     use crate::tile_color::tile_color;
     let z = current_layer.0;
-    for (tile, _entity, mut sprite) in tiles.iter_mut() {
-        // 同層が存在する場合はそのまま表示
-        if tile.z == z {
-            sprite.color = tile_color(tile.state).with_alpha(1.0);
+    for (tile, material_handle) in tiles.iter() {
+        let color = if tile.z == z {
+            tile_color(tile.state).with_alpha(1.0)
         } else if tile.z < z {
-            // 下層の表示: 透過度を下げて表示
             let below = &map.0[z][tile.y][tile.x];
             if *below == TileState::Empty {
-                sprite.color = tile_color(tile.state).with_alpha(0.3);
+                tile_color(tile.state).with_alpha(0.3)
             } else {
-                sprite.color = tile_color(tile.state).with_alpha(0.0);
+                tile_color(tile.state).with_alpha(0.0)
             }
         } else {
-            // 上層は非表示
-            sprite.color = tile_color(tile.state).with_alpha(0.0);
+            tile_color(tile.state).with_alpha(0.0)
+        };
+        if let Some(mat) = materials.get_mut(material_handle) {
+            mat.base_color = color;
         }
     }
 }

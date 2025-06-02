@@ -20,10 +20,3 @@ pub struct Tile {
     pub z: usize,
     pub state: TileState,
 }
-
-#[derive(Bundle)]
-pub struct TileBundle {
-    pub sprite: Sprite,
-    pub transform: Transform,
-    pub tile: Tile,
-}
